@@ -1,8 +1,8 @@
-
 import streamlit as st
 import pandas as pd
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
+from geopy.distance import geodesic
 import folium
 from streamlit_folium import st_folium
 
@@ -35,27 +35,53 @@ if uploaded_file:
         df['lat'] = latitudes
         df['lng'] = longitudes
 
-        st.subheader("All Uploaded Jobs (Geocoded)")
-        st.dataframe(df[['facility_name', 'city', 'state', 'lat', 'lng']])
-
-        # Filter out rows with missing coordinates
         df_valid = df.dropna(subset=['lat', 'lng'])
 
-        if not df_valid.empty:
-            st.subheader("🗺️ Facility Location Map")
+        st.subheader("Search From an Address")
+        user_address = st.text_input("Enter an address to search from")
+        radius = st.slider("Select radius (miles)", min_value=1, max_value=200, value=50)
 
-            # Center the map
-            avg_lat = df_valid['lat'].mean()
-            avg_lng = df_valid['lng'].mean()
-            fmap = folium.Map(location=[avg_lat, avg_lng], zoom_start=6)
+        if user_address:
+            user_location = geocode(user_address)
+            if user_location:
+                user_point = (user_location.latitude, user_location.longitude)
 
-            for _, row in df_valid.iterrows():
-                folium.Marker(
-                    location=[row['lat'], row['lng']],
-                    popup=f"{row['facility_name']}<br>{row['city']}, {row['state']}"
-                ).add_to(fmap)
+                df_valid['distance_miles'] = df_valid.apply(
+                    lambda row: geodesic(user_point, (row['lat'], row['lng'])).miles,
+                    axis=1
+                )
 
-            st_folium(fmap, width=900, height=600)
+                filtered_df = df_valid[df_valid['distance_miles'] <= radius]
 
+                st.subheader("📍 Matching Facilities Within Radius")
+                st.dataframe(filtered_df[['facility_name', 'city', 'state', 'distance_miles']].sort_values(by='distance_miles'))
+
+                if not filtered_df.empty:
+                    fmap = folium.Map(location=user_point, zoom_start=8)
+                    folium.Marker(
+                        location=user_point,
+                        icon=folium.Icon(color='blue', icon='search', prefix='fa'),
+                        popup="Search Origin"
+                    ).add_to(fmap)
+
+                    for _, row in filtered_df.iterrows():
+                        folium.Marker(
+                            location=[row['lat'], row['lng']],
+                            icon=folium.Icon(color='red', icon='map-marker', prefix='fa'),
+                            popup=f"{row['facility_name']}<br>{row['city']}, {row['state']}"
+                        ).add_to(fmap)
+
+                    folium.Circle(
+                        radius=radius * 1609.34,
+                        location=user_point,
+                        color='blue',
+                        fill=True,
+                        fill_opacity=0.1
+                    ).add_to(fmap)
+
+                    st.subheader("🗺️ Map of Facilities Within Radius")
+                    st_folium(fmap, width=900, height=600)
+            else:
+                st.error("Could not geocode the address you entered. Try something more specific.")
     else:
         st.error("Missing one or more required columns: facility_name, city, state")
