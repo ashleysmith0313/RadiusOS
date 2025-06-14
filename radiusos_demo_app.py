@@ -25,8 +25,11 @@ uploaded_file = st.file_uploader("Upload your geocoded Excel file", type=["xlsx"
 if uploaded_file is not None:
     df = pd.read_excel(uploaded_file)
 
+    # Normalize column names to lowercase for consistency
+    df.columns = df.columns.str.strip().str.lower()
+
     # Drop rows with missing coordinates
-    df = df.dropna(subset=['Latitude', 'Longitude'])
+    df = df.dropna(subset=['latitude', 'longitude'])
 
     address_input = st.text_input("Enter an address to search")
     radius = st.slider("Select radius (in miles)", min_value=1, max_value=100, value=25)
@@ -38,16 +41,17 @@ if uploaded_file is not None:
             st.error("Could not geocode the entered address. Please try a different one.")
         else:
             search_coords = (lat, lon)
-            filtered_df = df[df.apply(lambda row: geodesic(search_coords, (row['Latitude'], row['Longitude'])).miles <= radius, axis=1)]
+            filtered_df = df[df.apply(lambda row: geodesic(search_coords, (row['latitude'], row['longitude'])).miles <= radius, axis=1)]
 
             # Create map
             m = folium.Map(location=search_coords, zoom_start=8)
             folium.Marker(search_coords, tooltip="Search Location", icon=folium.Icon(color='blue')).add_to(m)
 
             for _, row in filtered_df.iterrows():
+                tooltip_text = row.get('facility_name') or row.get('facility name') or "Unknown Facility"
                 folium.Marker(
-                    location=[row['Latitude'], row['Longitude']],
-                    tooltip=row['Facility Name'],
+                    location=[row['latitude'], row['longitude']],
+                    tooltip=tooltip_text,
                     icon=folium.Icon(color='red', icon='plus-sign')
                 ).add_to(m)
 
