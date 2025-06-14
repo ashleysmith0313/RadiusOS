@@ -67,16 +67,15 @@ if uploaded_file is not None:
                 filtered_df = df[df['distance_miles'] <= radius].copy()
                 filtered_df = filtered_df.sort_values(by='distance_miles')
 
-                if 'full_address' not in filtered_df.columns:
-                    st.info("Generating physical addresses using reverse geocoding...")
-                    filtered_df['full_address'] = filtered_df.apply(lambda row: reverse_geocode(row['latitude'], row['longitude']), axis=1)
+                st.info("Generating physical addresses using reverse geocoding...")
+                filtered_df['full_address'] = filtered_df.apply(lambda row: reverse_geocode(row['latitude'], row['longitude']), axis=1)
 
                 # Create map
                 m = folium.Map(location=search_coords, zoom_start=8)
                 folium.Marker(search_coords, tooltip="Search Location", icon=folium.Icon(color='blue')).add_to(m)
 
                 for _, row in filtered_df.iterrows():
-                    tooltip_text = f"<b>{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}</b><br>{row.get('full_address', 'No address')}"
+                    tooltip_text = f"<div style='white-space: nowrap;'><b>{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}</b><br>{row.get('full_address', 'No address')}</div>"
                     folium.Marker(
                         location=[row['latitude'], row['longitude']],
                         tooltip=folium.Tooltip(tooltip_text, sticky=True),
