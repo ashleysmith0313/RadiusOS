@@ -95,10 +95,10 @@ if uploaded_file is not None:
 
                 for _, row in filtered_df.iterrows():
                     tooltip_text = f"""
-                    <div style='white-space: normal; max-width: 300px;'>
+                    <div style='white-space: normal; width: 300px;'>
                         <b>{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}</b><br>
                         {row.get('full_address', 'No address')}<br>
-                        <a href='{row.get('website', '#')}' target='_blank'>Website</a>
+                        <a href='{row.get('website', '#')}' target='_blank' style='color:blue;'>Visit Website</a>
                     </div>
                     """
                     folium.Marker(
