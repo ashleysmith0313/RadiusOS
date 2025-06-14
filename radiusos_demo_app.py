@@ -41,14 +41,20 @@ if uploaded_file is not None:
             st.error("Could not geocode the entered address. Please try a different one.")
         else:
             search_coords = (lat, lon)
-            filtered_df = df[df.apply(lambda row: geodesic(search_coords, (row['latitude'], row['longitude'])).miles <= radius, axis=1)]
+
+            def get_distance(row):
+                return geodesic(search_coords, (row['latitude'], row['longitude'])).miles
+
+            df['distance_miles'] = df.apply(get_distance, axis=1)
+            filtered_df = df[df['distance_miles'] <= radius].copy()
+            filtered_df = filtered_df.sort_values(by='distance_miles')
 
             # Create map
             m = folium.Map(location=search_coords, zoom_start=8)
             folium.Marker(search_coords, tooltip="Search Location", icon=folium.Icon(color='blue')).add_to(m)
 
             for _, row in filtered_df.iterrows():
-                tooltip_text = row.get('facility_name') or row.get('facility name') or "Unknown Facility"
+                tooltip_text = f"{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}\n{row.get('address', 'No address')}"
                 folium.Marker(
                     location=[row['latitude'], row['longitude']],
                     tooltip=tooltip_text,
@@ -58,6 +64,17 @@ if uploaded_file is not None:
             st_folium(m, width=1000, height=600)
 
             st.subheader("Facilities within radius")
-            st.dataframe(filtered_df)
+            display_df = filtered_df[[
+                row for row in ['facility_name', 'facility name', 'address', 'city', 'state', 'distance_miles'] if row in filtered_df.columns
+            ]].copy()
+            display_df.columns = [
+                'Facility Name' if col in ['facility_name', 'facility name'] else
+                'Address' if col == 'address' else
+                'City' if col == 'city' else
+                'State' if col == 'state' else
+                'Distance (miles)' for col in display_df.columns
+            ]
+
+            st.dataframe(display_df, use_container_width=True)
 else:
     st.info("Please upload a geocoded Excel file to begin.")
