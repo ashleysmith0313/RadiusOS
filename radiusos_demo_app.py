@@ -27,6 +27,12 @@ if uploaded_file is not None:
 
     # Normalize column names to lowercase for consistency
     df.columns = df.columns.str.strip().str.lower()
+
+    # Deduplicate column names by keeping only the first occurrence
+    _, idx = pd.Series(df.columns).duplicated(keep='first').factorize()
+    df.columns = pd.Index([f"{col}.{i}" if (df.columns[:j] == col).sum() > 1 else col for j, (col, i) in enumerate(zip(df.columns, idx))])
+    df.columns = df.columns.str.replace(r"\.\d+$", "", regex=True)
+
     st.write("Detected columns:", df.columns.tolist())
 
     # Only proceed if required columns exist and are Series
@@ -61,7 +67,7 @@ if uploaded_file is not None:
                 folium.Marker(search_coords, tooltip="Search Location", icon=folium.Icon(color='blue')).add_to(m)
 
                 for _, row in filtered_df.iterrows():
-                    tooltip_text = f"{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}\n{row.get('address', 'No address')}"
+                    tooltip_text = f"{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}\n{row.get('full_address', 'No address')}"
                     folium.Marker(
                         location=[row['latitude'], row['longitude']],
                         tooltip=tooltip_text,
@@ -72,11 +78,11 @@ if uploaded_file is not None:
 
                 st.subheader("Facilities within radius")
                 display_df = filtered_df[[
-                    row for row in ['facility_name', 'facility name', 'address', 'city', 'state', 'distance_miles'] if row in filtered_df.columns
+                    row for row in ['facility_name', 'facility name', 'full_address', 'city', 'state', 'distance_miles'] if row in filtered_df.columns
                 ]].copy()
                 display_df.columns = [
                     'Facility Name' if col in ['facility_name', 'facility name'] else
-                    'Address' if col == 'address' else
+                    'Address' if col == 'full_address' else
                     'City' if col == 'city' else
                     'State' if col == 'state' else
                     'Distance (miles)' for col in display_df.columns
