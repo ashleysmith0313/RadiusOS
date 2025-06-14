@@ -1,65 +1,56 @@
 import streamlit as st
 import pandas as pd
-import folium
-from folium.plugins import MarkerCluster
-from streamlit_folium import st_folium
 from geopy.distance import geodesic
+import folium
+from streamlit_folium import st_folium
 from geopy.geocoders import GoogleV3
+import os
 
-# --- Config ---
+# Set your Google API key here or from Streamlit secrets
+API_KEY = st.secrets["google_api_key"] if "google_api_key" in st.secrets else os.getenv("GOOGLE_API_KEY")
+
+def geocode_address(address):
+    geolocator = GoogleV3(api_key=API_KEY, timeout=10)
+    location = geolocator.geocode(address)
+    if location:
+        return location.latitude, location.longitude
+    else:
+        return None, None
+
 st.set_page_config(page_title="RadiusOS Facility Mapping", layout="wide")
 st.title("📍 RadiusOS Facility Mapping")
 
-# --- Load Data ---
-@st.cache_data
-def load_data():
-    return pd.read_excel("Texas Hospitals Geocoded.xlsx")
+# File uploader
+uploaded_file = st.file_uploader("Upload your geocoded Excel file", type=["xlsx"])
+if uploaded_file is not None:
+    df = pd.read_excel(uploaded_file)
 
-df = load_data()
+    address_input = st.text_input("Enter an address to search")
+    radius = st.slider("Select radius (in miles)", min_value=1, max_value=100, value=25)
 
-# --- Sidebar Filters ---
-st.sidebar.header("Search Parameters")
-user_address = st.sidebar.text_input("Enter your address:", "Austin, TX")
-radius_miles = st.sidebar.slider("Search Radius (miles)", 10, 200, 50)
+    if address_input:
+        lat, lon = geocode_address(address_input)
 
-# --- Geocode User Address ---
-api_key = "AIzaSyA-21e_swhPCCSIg1Evg-yltTiGQlaarp4"  # Replace with your actual API key
-geolocator = GoogleV3(api_key=api_key)
+        if lat is None or lon is None:
+            st.error("Could not geocode the entered address. Please try a different one.")
+        else:
+            search_coords = (lat, lon)
+            filtered_df = df[df.apply(lambda row: geodesic(search_coords, (row['Latitude'], row['Longitude'])).miles <= radius, axis=1)]
 
-try:
-    user_location = geolocator.geocode(user_address)
-    user_coords = (user_location.latitude, user_location.longitude)
-except Exception as e:
-    st.error("Failed to geocode the address. Please check your input or API key.")
-    st.stop()
+            # Create map
+            m = folium.Map(location=search_coords, zoom_start=8)
+            folium.Marker(search_coords, tooltip="Search Location", icon=folium.Icon(color='blue')).add_to(m)
 
-# --- Filter Facilities by Radius ---
-def calculate_distance(row):
-    return geodesic(user_coords, (row['Latitude'], row['Longitude'])).miles
+            for _, row in filtered_df.iterrows():
+                folium.Marker(
+                    location=[row['Latitude'], row['Longitude']],
+                    tooltip=row['Facility Name'],
+                    icon=folium.Icon(color='red', icon='plus-sign')
+                ).add_to(m)
 
-df['Distance'] = df.apply(calculate_distance, axis=1)
-df_filtered = df[df['Distance'] <= radius_miles]
+            st_folium(m, width=1000, height=600)
 
-# --- Map Setup ---
-m = folium.Map(location=user_coords, zoom_start=7)
-folium.Marker(
-    location=user_coords,
-    tooltip="Your Location",
-    icon=folium.Icon(color="blue", icon="home")
-).add_to(m)
-
-marker_cluster = MarkerCluster().add_to(m)
-for _, row in df_filtered.iterrows():
-    folium.Marker(
-        location=[row['Latitude'], row['Longitude']],
-        tooltip=row['Facility Name'],
-        popup=f"{row['Facility Name']}\n{row['City']}, {row['State']}",
-        icon=folium.Icon(color="red", icon="plus-sign")
-    ).add_to(marker_cluster)
-
-# --- Display Map ---
-st_folium(m, width=1200, height=700)
-
-# --- Show Data ---
-st.subheader("Facilities in Radius")
-st.dataframe(df_filtered[['Facility Name', 'City', 'State', 'Distance']].sort_values(by='Distance'))
+            st.subheader("Facilities within radius")
+            st.dataframe(filtered_df)
+else:
+    st.info("Please upload a geocoded Excel file to begin.")
