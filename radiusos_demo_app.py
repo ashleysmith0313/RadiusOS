@@ -27,6 +27,7 @@ if uploaded_file is not None:
 
     # Normalize column names to lowercase for consistency
     df.columns = df.columns.str.strip().str.lower()
+    st.write("Detected columns:", df.columns.tolist())
 
     # Only proceed if required columns exist and are Series
     if isinstance(df.get('latitude'), pd.Series) and isinstance(df.get('longitude'), pd.Series):
