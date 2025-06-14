@@ -28,8 +28,8 @@ if uploaded_file is not None:
     # Normalize column names to lowercase for consistency
     df.columns = df.columns.str.strip().str.lower()
 
-    # Drop rows with missing coordinates
-    df = df.dropna(subset=['latitude', 'longitude'])
+    # Drop rows with missing or non-numeric coordinates
+    df = df[pd.to_numeric(df['latitude'], errors='coerce').notnull() & pd.to_numeric(df['longitude'], errors='coerce').notnull()]
 
     address_input = st.text_input("Enter an address to search")
     radius = st.slider("Select radius (in miles)", min_value=1, max_value=100, value=25)
@@ -43,7 +43,10 @@ if uploaded_file is not None:
             search_coords = (lat, lon)
 
             def get_distance(row):
-                return geodesic(search_coords, (row['latitude'], row['longitude'])).miles
+                try:
+                    return geodesic(search_coords, (float(row['latitude']), float(row['longitude']))).miles
+                except Exception:
+                    return float('inf')
 
             df['distance_miles'] = df.apply(lambda row: get_distance(row), axis=1)
             filtered_df = df[df['distance_miles'] <= radius].copy()
