@@ -43,7 +43,7 @@ def get_website_from_place_name(place_name):
     return "Website not found"
 
 st.set_page_config(page_title="RadiusOS Facility Mapping", layout="wide")
-st.title("📍 RadiusOS Facility Mapping")
+st.title("\U0001F4CD RadiusOS Facility Mapping")
 
 # File uploader
 uploaded_file = st.file_uploader("Upload your geocoded Excel file", type=["xlsx"])
@@ -94,16 +94,17 @@ if uploaded_file is not None:
                 folium.Marker(search_coords, tooltip="Search Location", icon=folium.Icon(color='blue')).add_to(m)
 
                 for _, row in filtered_df.iterrows():
+                    website_link = f"<a href='{row['website']}' target='_blank' style='color:blue;'>Visit Website</a>" if str(row['website']).startswith('http') else "Website not found"
                     popup_text = f"""
                     <div style='white-space: normal; width: 300px;'>
                         <b>{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}</b><br>
                         {row.get('full_address', 'No address')}<br>
-                        <a href='{row.get('website', '#')}' target='_blank' style='color:blue;'>Visit Website</a>
+                        {website_link}
                     </div>
                     """
                     folium.Marker(
                         location=[row['latitude'], row['longitude']],
-                        popup=folium.Popup(popup_text, max_width=300),
+                        popup=folium.Popup(popup_text, max_width=300, parse_html=True, show=True, sticky=True),
                         icon=folium.Icon(color='red', icon='plus-sign')
                     ).add_to(m)
 
