@@ -45,7 +45,7 @@ if uploaded_file is not None:
             def get_distance(row):
                 return geodesic(search_coords, (row['latitude'], row['longitude'])).miles
 
-            df['distance_miles'] = df.apply(get_distance, axis=1)
+            df['distance_miles'] = df.apply(lambda row: get_distance(row), axis=1)
             filtered_df = df[df['distance_miles'] <= radius].copy()
             filtered_df = filtered_df.sort_values(by='distance_miles')
 
