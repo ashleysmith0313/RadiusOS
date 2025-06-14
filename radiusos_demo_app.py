@@ -24,6 +24,24 @@ def reverse_geocode(lat, lon):
         return location.address
     return "Address not found"
 
+def get_website_from_place_name(place_name):
+    import requests
+    endpoint = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
+    params = {
+        "input": place_name,
+        "inputtype": "textquery",
+        "fields": "website",
+        "key": API_KEY
+    }
+    try:
+        response = requests.get(endpoint, params=params)
+        result = response.json()
+        if result.get("candidates"):
+            return result["candidates"][0].get("website", "Website not found")
+    except:
+        pass
+    return "Website not found"
+
 st.set_page_config(page_title="RadiusOS Facility Mapping", layout="wide")
 st.title("📍 RadiusOS Facility Mapping")
 
@@ -68,15 +86,19 @@ if uploaded_file is not None:
                 st.info("Generating physical addresses using reverse geocoding...")
                 filtered_df['full_address'] = filtered_df.apply(lambda row: reverse_geocode(row['latitude'], row['longitude']), axis=1)
 
+                st.info("Fetching website info...")
+                filtered_df['website'] = filtered_df.apply(lambda row: get_website_from_place_name(row.get('facility_name', '')), axis=1)
+
                 # Create map
                 m = folium.Map(location=search_coords, zoom_start=8)
                 folium.Marker(search_coords, tooltip="Search Location", icon=folium.Icon(color='blue')).add_to(m)
 
                 for _, row in filtered_df.iterrows():
                     tooltip_text = f"""
-                    <div style='white-space: normal;'>
+                    <div style='white-space: normal; max-width: 300px;'>
                         <b>{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}</b><br>
-                        {row.get('full_address', 'No address')}
+                        {row.get('full_address', 'No address')}<br>
+                        <a href='{row.get('website', '#')}' target='_blank'>Website</a>
                     </div>
                     """
                     folium.Marker(
@@ -89,13 +111,14 @@ if uploaded_file is not None:
 
                 st.subheader("Facilities within radius")
                 display_df = filtered_df[[
-                    row for row in ['facility_name', 'facility name', 'full_address', 'city', 'state', 'distance_miles'] if row in filtered_df.columns
+                    row for row in ['facility_name', 'facility name', 'full_address', 'city', 'state', 'website', 'distance_miles'] if row in filtered_df.columns
                 ]].copy()
                 display_df.columns = [
                     'Facility Name' if col in ['facility_name', 'facility name'] else
                     'Address' if col == 'full_address' else
                     'City' if col == 'city' else
                     'State' if col == 'state' else
+                    'Website' if col == 'website' else
                     'Distance (miles)' for col in display_df.columns
                 ]
 
