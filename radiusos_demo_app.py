@@ -28,8 +28,11 @@ if uploaded_file is not None:
     # Normalize column names to lowercase for consistency
     df.columns = df.columns.str.strip().str.lower()
 
-    # Drop rows with missing or non-numeric coordinates
-    df = df[pd.to_numeric(df['latitude'], errors='coerce').notnull() & pd.to_numeric(df['longitude'], errors='coerce').notnull()]
+    # Ensure latitude and longitude columns exist and convert to numeric
+    if 'latitude' in df.columns and 'longitude' in df.columns:
+        df['latitude'] = pd.to_numeric(df['latitude'], errors='coerce')
+        df['longitude'] = pd.to_numeric(df['longitude'], errors='coerce')
+        df = df.dropna(subset=['latitude', 'longitude'])
 
     address_input = st.text_input("Enter an address to search")
     radius = st.slider("Select radius (in miles)", min_value=1, max_value=100, value=25)
