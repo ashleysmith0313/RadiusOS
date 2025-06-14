@@ -28,10 +28,8 @@ if uploaded_file is not None:
     # Normalize column names to lowercase for consistency
     df.columns = df.columns.str.strip().str.lower()
 
-    # Deduplicate column names by keeping only the first occurrence
-    _, idx = pd.Series(df.columns).duplicated(keep='first').factorize()
-    df.columns = pd.Index([f"{col}.{i}" if (df.columns[:j] == col).sum() > 1 else col for j, (col, i) in enumerate(zip(df.columns, idx))])
-    df.columns = df.columns.str.replace(r"\.\d+$", "", regex=True)
+    # Drop exact duplicate columns (not just names)
+    df = df.loc[:, ~df.columns.duplicated()]
 
     st.write("Detected columns:", df.columns.tolist())
 
