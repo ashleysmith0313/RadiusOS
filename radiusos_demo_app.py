@@ -94,17 +94,17 @@ if uploaded_file is not None:
                 folium.Marker(search_coords, tooltip="Search Location", icon=folium.Icon(color='blue')).add_to(m)
 
                 for _, row in filtered_df.iterrows():
-                    website_link = f"<a href='{row['website']}' target='_blank' style='color:blue;'>Visit Website</a>" if str(row['website']).startswith('http') else "Website not found"
-                    popup_text = f"""
+                    website_link = f"<a href='{row['website']}' target='_blank' rel='noopener noreferrer' style='color:blue;'>Visit Website</a>" if str(row['website']).startswith('http') else "Website not found"
+                    popup_html = f"""
                     <div style='white-space: normal; width: 300px;'>
-                        <b>{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}</b><br>
+                        <strong>{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}</strong><br>
                         {row.get('full_address', 'No address')}<br>
                         {website_link}
                     </div>
                     """
                     folium.Marker(
                         location=[row['latitude'], row['longitude']],
-                        popup=folium.Popup(popup_text, max_width=300, parse_html=True, show=True, sticky=True),
+                        popup=folium.Popup(folium.IFrame(html=popup_html, width=300, height=120), max_width=300),
                         icon=folium.Icon(color='red', icon='plus-sign')
                     ).add_to(m)
 
