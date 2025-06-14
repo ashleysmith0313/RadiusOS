@@ -38,8 +38,6 @@ if uploaded_file is not None:
     # Drop exact duplicate columns (not just names)
     df = df.loc[:, ~df.columns.duplicated()]
 
-    st.write("Detected columns:", df.columns.tolist())
-
     # Only proceed if required columns exist and are Series
     if isinstance(df.get('latitude'), pd.Series) and isinstance(df.get('longitude'), pd.Series):
         df['latitude'] = pd.to_numeric(df['latitude'], errors='coerce')
@@ -75,7 +73,12 @@ if uploaded_file is not None:
                 folium.Marker(search_coords, tooltip="Search Location", icon=folium.Icon(color='blue')).add_to(m)
 
                 for _, row in filtered_df.iterrows():
-                    tooltip_text = f"<div style='white-space: nowrap;'><b>{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}</b><br>{row.get('full_address', 'No address')}</div>"
+                    tooltip_text = f"""
+                    <div style='white-space: normal;'>
+                        <b>{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}</b><br>
+                        {row.get('full_address', 'No address')}
+                    </div>
+                    """
                     folium.Marker(
                         location=[row['latitude'], row['longitude']],
                         tooltip=folium.Tooltip(tooltip_text, sticky=True),
