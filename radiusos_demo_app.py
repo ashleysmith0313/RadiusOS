@@ -26,21 +26,37 @@ def reverse_geocode(lat, lon):
 
 def get_website_from_place_name(place_name):
     import requests
-    endpoint = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
-    params = {
-        "input": place_name,
-        "inputtype": "textquery",
-        "fields": "website",
-        "key": API_KEY
-    }
     try:
-        response = requests.get(endpoint, params=params)
-        result = response.json()
-        if result.get("candidates"):
-            return result["candidates"][0].get("website", "Website not found")
-    except:
-        pass
-    return "Website not found"
+        # Step 1: Get place_id
+        find_endpoint = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
+        find_params = {
+            "input": place_name,
+            "inputtype": "textquery",
+            "fields": "place_id",
+            "key": API_KEY
+        }
+        find_response = requests.get(find_endpoint, params=find_params)
+        find_data = find_response.json()
+        candidates = find_data.get("candidates")
+        if not candidates:
+            return "Website not found"
+
+        place_id = candidates[0]["place_id"]
+
+        # Step 2: Use place_id to get website
+        details_endpoint = "https://maps.googleapis.com/maps/api/place/details/json"
+        details_params = {
+            "place_id": place_id,
+            "fields": "website",
+            "key": API_KEY
+        }
+        details_response = requests.get(details_endpoint, params=details_params)
+        details_data = details_response.json()
+
+        return details_data.get("result", {}).get("website", "Website not found")
+
+    except Exception as e:
+        return "Website not found"
 
 st.set_page_config(page_title="RadiusOS Facility Mapping", layout="wide")
 st.title("\U0001F4CD RadiusOS Facility Mapping")
@@ -104,7 +120,7 @@ if uploaded_file is not None:
                     """
                     folium.Marker(
                         location=[row['latitude'], row['longitude']],
-                        popup=folium.Popup(folium.IFrame(html=popup_html, width=300, height=120), max_width=300),
+                        popup=folium.Popup(html=popup_html, max_width=300),
                         icon=folium.Icon(color='red', icon='plus-sign')
                     ).add_to(m)
 
