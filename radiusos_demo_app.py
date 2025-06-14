@@ -94,7 +94,7 @@ if uploaded_file is not None:
                 folium.Marker(search_coords, tooltip="Search Location", icon=folium.Icon(color='blue')).add_to(m)
 
                 for _, row in filtered_df.iterrows():
-                    tooltip_text = f"""
+                    popup_text = f"""
                     <div style='white-space: normal; width: 300px;'>
                         <b>{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}</b><br>
                         {row.get('full_address', 'No address')}<br>
@@ -103,7 +103,7 @@ if uploaded_file is not None:
                     """
                     folium.Marker(
                         location=[row['latitude'], row['longitude']],
-                        tooltip=folium.Tooltip(tooltip_text, sticky=True),
+                        popup=folium.Popup(popup_text, max_width=300),
                         icon=folium.Icon(color='red', icon='plus-sign')
                     ).add_to(m)
 
