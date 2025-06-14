@@ -25,6 +25,9 @@ uploaded_file = st.file_uploader("Upload your geocoded Excel file", type=["xlsx"
 if uploaded_file is not None:
     df = pd.read_excel(uploaded_file)
 
+    # Drop rows with missing coordinates
+    df = df.dropna(subset=['Latitude', 'Longitude'])
+
     address_input = st.text_input("Enter an address to search")
     radius = st.slider("Select radius (in miles)", min_value=1, max_value=100, value=25)
 
@@ -42,11 +45,9 @@ if uploaded_file is not None:
             folium.Marker(search_coords, tooltip="Search Location", icon=folium.Icon(color='blue')).add_to(m)
 
             for _, row in filtered_df.iterrows():
-                popup_content = f"<b>{row['Facility Name']}</b><br>{row['Address']}"
                 folium.Marker(
                     location=[row['Latitude'], row['Longitude']],
                     tooltip=row['Facility Name'],
-                    popup=popup_content,
                     icon=folium.Icon(color='red', icon='plus-sign')
                 ).add_to(m)
 
