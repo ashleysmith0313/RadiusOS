@@ -17,6 +17,13 @@ def geocode_address(address):
     else:
         return None, None
 
+def reverse_geocode(lat, lon):
+    geolocator = GoogleV3(api_key=API_KEY, timeout=10)
+    location = geolocator.reverse((lat, lon))
+    if location:
+        return location.address
+    return "Address not found"
+
 st.set_page_config(page_title="RadiusOS Facility Mapping", layout="wide")
 st.title("📍 RadiusOS Facility Mapping")
 
@@ -60,15 +67,19 @@ if uploaded_file is not None:
                 filtered_df = df[df['distance_miles'] <= radius].copy()
                 filtered_df = filtered_df.sort_values(by='distance_miles')
 
+                if 'full_address' not in filtered_df.columns:
+                    st.info("Generating physical addresses using reverse geocoding...")
+                    filtered_df['full_address'] = filtered_df.apply(lambda row: reverse_geocode(row['latitude'], row['longitude']), axis=1)
+
                 # Create map
                 m = folium.Map(location=search_coords, zoom_start=8)
                 folium.Marker(search_coords, tooltip="Search Location", icon=folium.Icon(color='blue')).add_to(m)
 
                 for _, row in filtered_df.iterrows():
-                    tooltip_text = f"{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}\n{row.get('full_address', 'No address')}"
+                    tooltip_text = f"<b>{row.get('facility_name') or row.get('facility name', 'Unknown Facility')}</b><br>{row.get('full_address', 'No address')}"
                     folium.Marker(
                         location=[row['latitude'], row['longitude']],
-                        tooltip=tooltip_text,
+                        tooltip=folium.Tooltip(tooltip_text, sticky=True),
                         icon=folium.Icon(color='red', icon='plus-sign')
                     ).add_to(m)
 
