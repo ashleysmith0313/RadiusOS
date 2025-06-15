@@ -10,6 +10,34 @@ import os
 DATA_FILE = "Geocoded_Hospitals.xlsx"
 API_KEY = os.getenv("GOOGLE_API_KEY") or "AIzaSyA-21e_swhPCCSIg1Evg-yltTiGQlaarp4"
 
+# --- Page Config ---
+st.set_page_config(page_title="RadiusOS Facility Mapping", page_icon="📍", layout="wide")
+st.markdown("""
+    <style>
+    body {
+        background-color: #F4F4F9;
+    }
+    .stApp {
+        color: #264653;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .stSlider > div[data-baseweb="slider"] {
+        color: #2A9D8F;
+    }
+    .stButton > button {
+        background-color: #2A9D8F;
+        color: white;
+    }
+    .stDataFrame th {
+        background-color: #E9C46A;
+        color: #264653;
+    }
+    a {
+        color: #2A9D8F !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- Load Data ---
 df = pd.read_excel(DATA_FILE)
 df.columns = df.columns.str.strip().str.lower()
@@ -32,7 +60,7 @@ def geocode_address(address):
     return None, None
 
 # --- UI ---
-st.title("RadiusOS Facility Mapping")
+st.title("📍 RadiusOS Facility Mapping")
 st.caption("e.g. 2510 Oasis Dr, Longview, TX 75601")
 address_input = st.text_input("Enter an address to search")
 radius = st.slider("Select radius (in miles)", 1, 100, 25)
@@ -51,7 +79,7 @@ if address_input:
     # --- Map ---
     st.subheader("Facilities within radius")
     map_center = search_coords
-    m = folium.Map(location=map_center, zoom_start=8)
+    m = folium.Map(location=map_center, zoom_start=8, tiles='CartoDB positron')
 
     # Add user location pin
     folium.Marker(
@@ -67,13 +95,13 @@ if address_input:
         website_html = f'<a href="{website}" target="_blank">Visit Website</a>' if website != "Website not found" else website
 
         popup_html = folium.Popup(folium.IFrame(html=f"""
-        <div style='white-space: normal; width: 250px;'>
+        <div style='white-space: normal; width: 280px;'>
             <b>{name}</b><br>
             {address}<br>
             {website_html}<br>
             {round(row['distance_miles'], 2)} miles away
         </div>
-        """, width=280, height=150), max_width=300)
+        """, width=300, height=150), max_width=310)
 
         folium.Marker(
             location=[row['latitude'], row['longitude']],
@@ -81,12 +109,14 @@ if address_input:
             popup=popup_html
         ).add_to(m)
 
-    st_data = st_folium(m, width=700, height=500)
+    st_data = st_folium(m, width=900, height=600)
 
     # --- Table of Results ---
     st.subheader("List of Nearby Facilities")
     columns_to_show = [col for col in ["facility_name", "full_address", "distance_miles", "website"] if col in filtered_df.columns]
     if columns_to_show:
-        st.dataframe(filtered_df[columns_to_show].reset_index(drop=True))
+        display_df = filtered_df[columns_to_show].copy()
+        display_df["website"] = display_df["website"].apply(lambda url: f"[Visit Website]({url})" if pd.notna(url) and url != "Website not found" else url)
+        st.dataframe(display_df.reset_index(drop=True))
     else:
         st.warning("Expected columns not found in the dataset.")
