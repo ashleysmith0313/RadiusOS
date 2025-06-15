@@ -107,7 +107,7 @@ if address_input:
             location=[row['latitude'], row['longitude']],
             tooltip=name,
             popup=popup_html,
-            icon=folium.Icon(color="red", icon="plus-sign", prefix="fa")
+            icon=folium.Icon(color="red", icon="plus", prefix="fa")
         ).add_to(m)
 
     st_data = st_folium(m, width=900, height=600)
@@ -118,6 +118,6 @@ if address_input:
     if columns_to_show:
         display_df = filtered_df[columns_to_show].copy()
         display_df["website"] = display_df["website"].apply(lambda url: f"[Visit Website]({url})" if pd.notna(url) and url != "Website not found" else url)
-        st.dataframe(display_df.reset_index(drop=True))
+        st.dataframe(display_df.reset_index(drop=True), use_container_width=True)
     else:
         st.warning("Expected columns not found in the dataset.")
