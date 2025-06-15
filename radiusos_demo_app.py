@@ -56,7 +56,7 @@ if address_input:
     for _, row in filtered_df.iterrows():
         name = row.get("facility_name", "")
         address = row.get("full_address", "")
-        website = row.get("website", "Website not found")
+        website = row["website"] if "website" in row and pd.notna(row["website"]) else "Website not found"
         website_html = f'<a href="{website}" target="_blank">Visit Website</a>' if website != "Website not found" else website
 
         popup_html = f"""
