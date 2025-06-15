@@ -28,12 +28,14 @@ st.markdown("""
         background-color: #2A9D8F;
         color: white;
     }
-    .stDataFrame th {
-        background-color: #E9C46A;
-        color: #264653;
-    }
     a {
         color: #2A9D8F !important;
+        text-decoration: none;
+        font-weight: bold;
+    }
+    table td, table th {
+        font-size: 16px;
+        padding: 10px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -116,7 +118,10 @@ if address_input:
     columns_to_show = [col for col in ["facility_name", "full_address", "distance_miles", "website"] if col in filtered_df.columns]
     if columns_to_show:
         display_df = filtered_df[columns_to_show].copy()
-        display_df["website"] = display_df["website"].apply(lambda url: f"[Visit Website]({url})" if pd.notna(url) and url != "Website not found" else url)
-        st.dataframe(display_df.reset_index(drop=True))
+        display_df["website"] = display_df["website"].apply(
+            lambda url: f'<a href="{url}" target="_blank">Visit Website</a>'
+            if pd.notna(url) and url != "Website not found" else "Website not found"
+        )
+        st.write(display_df.to_html(escape=False, index=False), unsafe_allow_html=True)
     else:
         st.warning("Expected columns not found in the dataset.")
