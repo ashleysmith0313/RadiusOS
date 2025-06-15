@@ -14,6 +14,11 @@ API_KEY = os.getenv("GOOGLE_API_KEY") or "AIzaSyA-21e_swhPCCSIg1Evg-yltTiGQlaarp
 df = pd.read_excel(DATA_FILE)
 df.columns = df.columns.str.strip().str.lower()
 
+# --- Clean Data ---
+df = df[pd.to_numeric(df['latitude'], errors='coerce').notnull() & pd.to_numeric(df['longitude'], errors='coerce').notnull()]
+df['latitude'] = pd.to_numeric(df['latitude'], errors='coerce')
+df['longitude'] = pd.to_numeric(df['longitude'], errors='coerce')
+
 # --- Geocoder ---
 geolocator = GoogleV3(api_key=API_KEY, timeout=10)
 
