@@ -114,7 +114,7 @@ if address_input:
 
     # --- Table of Results ---
     st.subheader("List of Nearby Facilities")
-    columns_to_show = [col for col in ["facility_name", "full_address", "distance_miles", "website"] if col in filtered_df.columns]
+    columns_to_show = [col for col in ["facility_name", "full_address", "distance_miles"] if col in filtered_df.columns]
     if columns_to_show:
         display_df = filtered_df[columns_to_show].copy()
         display_df["website"] = display_df["website"].apply(lambda url: f"[Visit Website]({url})" if pd.notna(url) and url != "Website not found" else url)
