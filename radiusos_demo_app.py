@@ -53,14 +53,23 @@ if address_input:
     map_center = search_coords
     m = folium.Map(location=map_center, zoom_start=8)
 
+    # 🔴 Add marker for the search address
+    folium.Marker(
+        location=search_coords,
+        tooltip="Search Location",
+        popup="Search Location",
+        icon=folium.Icon(color="blue", icon="search", prefix="fa")
+    ).add_to(m)
+
+    # 🏥 Add facility markers
     for _, row in filtered_df.iterrows():
-        name = row.get("facility_name", "")
-        address = row.get("full_address", "")
-        website = row["website"] if "website" in row and pd.notna(row["website"]) else "Website not found"
+        name = row.get("facility_name", "Unknown Facility")
+        address = row.get("full_address", "Address not available")
+        website = row.get("website", "Website not found")
         website_html = f'<a href="{website}" target="_blank">Visit Website</a>' if website != "Website not found" else website
 
         popup_html = f"""
-        <div style='white-space: normal; width: 250px;'>
+        <div style='white-space: normal; width: 300px;'>
             <b>{name}</b><br>
             {address}<br>
             {website_html}<br>
@@ -77,4 +86,8 @@ if address_input:
 
     # --- Table of Results ---
     st.subheader("List of Nearby Facilities")
-    st.dataframe(filtered_df[["facility_name", "full_address", "distance_miles", "website"]].reset_index(drop=True))
+    columns_to_show = ["facility_name", "full_address", "distance_miles"]
+    if "website" in filtered_df.columns:
+        columns_to_show.append("website")
+
+    st.dataframe(filtered_df[columns_to_show].reset_index(drop=True))
