@@ -28,14 +28,12 @@ st.markdown("""
         background-color: #2A9D8F;
         color: white;
     }
+    .stDataFrame th {
+        background-color: #E9C46A;
+        color: #264653;
+    }
     a {
         color: #2A9D8F !important;
-        text-decoration: none;
-        font-weight: bold;
-    }
-    table td, table th {
-        font-size: 16px;
-        padding: 10px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -87,7 +85,7 @@ if address_input:
     folium.Marker(
         location=search_coords,
         tooltip="Search Location",
-        icon=folium.Icon(color="blue", icon="search", prefix="fa")
+        icon=folium.Icon(color="blue", icon="medkit", prefix="fa")
     ).add_to(m)
 
     for _, row in filtered_df.iterrows():
@@ -108,7 +106,8 @@ if address_input:
         folium.Marker(
             location=[row['latitude'], row['longitude']],
             tooltip=name,
-            popup=popup_html
+            popup=popup_html,
+            icon=folium.Icon(color="red", icon="plus-sign", prefix="fa")
         ).add_to(m)
 
     st_data = st_folium(m, width=900, height=600)
@@ -118,10 +117,7 @@ if address_input:
     columns_to_show = [col for col in ["facility_name", "full_address", "distance_miles", "website"] if col in filtered_df.columns]
     if columns_to_show:
         display_df = filtered_df[columns_to_show].copy()
-        display_df["website"] = display_df["website"].apply(
-            lambda url: f'<a href="{url}" target="_blank">Visit Website</a>'
-            if pd.notna(url) and url != "Website not found" else "Website not found"
-        )
-        st.write(display_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+        display_df["website"] = display_df["website"].apply(lambda url: f"[Visit Website]({url})" if pd.notna(url) and url != "Website not found" else url)
+        st.dataframe(display_df.reset_index(drop=True))
     else:
         st.warning("Expected columns not found in the dataset.")
