@@ -4,11 +4,10 @@ import folium
 from streamlit_folium import st_folium
 from geopy.geocoders import GoogleV3
 from geopy.distance import geodesic
-import os
 
 # --- Config ---
 DATA_FILE = "Geocoded_Hospitals.xlsx"
-API_KEY = os.getenv("GOOGLE_API_KEY") or "AIzaSyA-21e_swhPCCSIg1Evg-yltTiGQlaarp4"
+API_KEY = "AIzaSyA-21e_swhPCCSIg1Evg-yltTiGQlaarp4"
 
 # --- Page Config ---
 st.set_page_config(page_title="RadiusOS Facility Mapping", page_icon="📍", layout="wide")
@@ -20,13 +19,6 @@ st.markdown("""
     .stApp {
         color: #264653;
         font-family: 'Segoe UI', sans-serif;
-    }
-    .stSlider > div[data-baseweb="slider"] {
-        color: #2A9D8F;
-    }
-    .stButton > button {
-        background-color: #2A9D8F;
-        color: white;
     }
     .stDataFrame th {
         background-color: #E9C46A;
@@ -78,10 +70,9 @@ if address_input:
 
     # --- Map ---
     st.subheader("Facilities within radius")
-    map_center = search_coords
-    m = folium.Map(location=map_center, zoom_start=8, tiles='CartoDB positron')
+    m = folium.Map(location=search_coords, zoom_start=8, tiles='CartoDB positron')
 
-    # Add user location pin
+    # Add search location marker
     folium.Marker(
         location=search_coords,
         tooltip="Search Location",
@@ -110,14 +101,13 @@ if address_input:
             icon=folium.Icon(color="red", icon="plus", prefix="fa")
         ).add_to(m)
 
-    st_data = st_folium(m, width=900, height=600)
+    st_folium(m, width=900, height=600)
 
-    # --- Table of Results ---
+    # --- Table of Results (no website) ---
     st.subheader("List of Nearby Facilities")
     columns_to_show = [col for col in ["facility_name", "full_address", "distance_miles"] if col in filtered_df.columns]
     if columns_to_show:
         display_df = filtered_df[columns_to_show].copy()
-        display_df["website"] = display_df["website"].apply(lambda url: f"[Visit Website]({url})" if pd.notna(url) and url != "Website not found" else url)
         st.dataframe(display_df.reset_index(drop=True), use_container_width=True)
     else:
         st.warning("Expected columns not found in the dataset.")
