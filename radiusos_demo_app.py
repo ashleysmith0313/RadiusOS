@@ -9,7 +9,7 @@ import os
 
 # --- Config ---
 DATA_FILE = "Geocoded_Hospitals.xlsx"
-API_KEY = os.getenv("GOOGLE_API_KEY") or "YOUR_API_KEY_HERE"
+API_KEY = os.getenv("GOOGLE_API_KEY") or "AIzaSyA-21e_swhPCCSIg1Evg-yltTiGQlaarp4"
 
 # --- Load Data ---
 df = pd.read_excel(DATA_FILE)
