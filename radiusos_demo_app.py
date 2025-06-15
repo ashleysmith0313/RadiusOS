@@ -53,41 +53,40 @@ if address_input:
     map_center = search_coords
     m = folium.Map(location=map_center, zoom_start=8)
 
-    # 🔴 Add marker for the search address
+    # Add user location pin
     folium.Marker(
         location=search_coords,
         tooltip="Search Location",
-        popup="Search Location",
         icon=folium.Icon(color="blue", icon="search", prefix="fa")
     ).add_to(m)
 
-    # 🏥 Add facility markers
     for _, row in filtered_df.iterrows():
-        name = row.get("facility_name", "Unknown Facility")
-        address = row.get("full_address", "Address not available")
-        website = row.get("website", "Website not found")
+        name = row.get("facility_name", "")
+        address = row.get("full_address", "")
+        website = row["website"] if "website" in row and pd.notna(row["website"]) else "Website not found"
         website_html = f'<a href="{website}" target="_blank">Visit Website</a>' if website != "Website not found" else website
 
-        popup_html = f"""
-        <div style='white-space: normal; width: 300px;'>
+        popup_html = folium.Popup(folium.IFrame(html=f"""
+        <div style='white-space: normal; width: 250px;'>
             <b>{name}</b><br>
             {address}<br>
             {website_html}<br>
             {round(row['distance_miles'], 2)} miles away
         </div>
-        """
+        """, width=280, height=150), max_width=300)
+
         folium.Marker(
             location=[row['latitude'], row['longitude']],
             tooltip=name,
-            popup=folium.Popup(popup_html, max_width=300)
+            popup=popup_html
         ).add_to(m)
 
     st_data = st_folium(m, width=700, height=500)
 
     # --- Table of Results ---
     st.subheader("List of Nearby Facilities")
-    columns_to_show = ["facility_name", "full_address", "distance_miles"]
-    if "website" in filtered_df.columns:
-        columns_to_show.append("website")
-
-    st.dataframe(filtered_df[columns_to_show].reset_index(drop=True))
+    columns_to_show = [col for col in ["facility_name", "full_address", "distance_miles", "website"] if col in filtered_df.columns]
+    if columns_to_show:
+        st.dataframe(filtered_df[columns_to_show].reset_index(drop=True))
+    else:
+        st.warning("Expected columns not found in the dataset.")
