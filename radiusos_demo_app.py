@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import folium
@@ -8,7 +9,7 @@ import os
 
 # --- Config ---
 DATA_FILE = "Geocoded_Hospitals.xlsx"
-API_KEY = os.getenv("GOOGLE_API_KEY") or "AIzaSyA-21e_swhPCCSIg1Evg-yltTiGQlaarp4"
+API_KEY = os.getenv("GOOGLE_API_KEY") or "YOUR_API_KEY_HERE"
 
 # --- Load Data ---
 df = pd.read_excel(DATA_FILE)
@@ -53,14 +54,7 @@ if address_input:
             website = row.get("website", "Website not found")
             website_html = f'<a href="{website}" target="_blank">Visit Website</a>' if website != "Website not found" else website
 
-            popup_html = f"""
-            <div style='white-space: normal; width: 250px;'>
-                <b>{name}</b><br>
-                {address}<br>
-                {website_html}<br>
-                {round(row['distance_miles'], 2)} miles away
-            </div>
-            """
+            popup_html = f"<div style='white-space: normal; width: 250px;'><b>{name}</b><br>{address}<br>{website_html}<br>{round(row['distance_miles'], 2)} miles away</div>"
             folium.Marker(
                 location=[row['latitude'], row['longitude']],
                 tooltip=name,
